@@ -28,12 +28,41 @@ Strings
 "foo"
 """a "quoted" string"""
 "fo\"o"
+"string with comment # not a comment"
+"""
+triple string with comment
+
+# not a comment
+"""
 
 ---
 
 (source_file
   (string)
   (triple_string)
+  (string)
+  (string)
+  (triple_string))
+
+=================
+String interpolation
+=================
+
+"   a $symbol"
+"  an $(expression(x + 1))"
+"escape \$interpolation"
+"escape \$(f())"
+
+---
+
+(source_file
+  (string (string_interpolation (identifier)))
+  (string (string_interpolation
+    (parenthesized_expression
+      (call_expression
+        (identifier)
+        (argument_list (binary_expression (identifier) (number)))))))
+  (string)
   (string))
 
 =================
@@ -55,12 +84,14 @@ Prefixed strings
 
 x = r"foo"
 y = v"1.0"
+z = s"# not comment"
 
 ---
 
 (source_file
-  (assignment_expression (identifier) (string (identifier)))
-  (assignment_expression (identifier) (string (identifier))))
+  (assignment_expression (identifier) (prefixed_string (identifier)))
+  (assignment_expression (identifier) (prefixed_string (identifier)))
+  (assignment_expression (identifier) (prefixed_string (identifier))))
 
 =================
 Characters

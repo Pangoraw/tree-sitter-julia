@@ -1,23 +1,162 @@
 #include <tree_sitter/parser.h>
 #include <wctype.h>
+#include <stdio.h>
+
+#define DEBUG(x) printf("SCANNER: %s\n", x);
+#define DEBUG_LOOKAHEAD(x) printf("SCANNER: lookahead is: 0x%x %c\n", x, x);
 
 enum TokenType {
   BLOCK_COMMENT,
-  TRIPLE_STRING,
   IMMEDIATE_PAREN,
+
+  STRING_DELIM,
+  TRIPLE_STRING_DELIM,
+
+  STRING_CONTENT,
+  STRING_CONTENT_NO_INTERPOLATION,
+  TRIPLE_STRING_CONTENT,
+  TRIPLE_STRING_CONTENT_NO_INTERPOLATION,
 };
+
+static void debug_valid_symbol(const bool *valid_symbols) {
+  if (valid_symbols[BLOCK_COMMENT]) {
+    printf("BLOCK_COMMENT = true\n");
+  }
+  if (valid_symbols[IMMEDIATE_PAREN]) {
+    printf("IMMEDIATE_PAREN = true\n");
+  }
+  if (valid_symbols[STRING_DELIM]) {
+    printf("STRING_DELIM = true\n");
+  }
+  if (valid_symbols[TRIPLE_STRING_DELIM]) {
+    printf("TRIPLE_STRING_DELIM = true\n");
+  }
+  if (valid_symbols[STRING_CONTENT]) {
+    printf("STRING_CONTENT = true\n");
+  }
+  if (valid_symbols[STRING_CONTENT_NO_INTERPOLATION]) {
+    printf("STRING_CONTENT_NO_INTERPOLATION = true\n");
+  }
+  if (valid_symbols[TRIPLE_STRING_CONTENT]) {
+    printf("TRIPLE_STRING_CONTENT = true\n");
+  }
+  if (valid_symbols[TRIPLE_STRING_CONTENT_NO_INTERPOLATION]) {
+    printf("TRIPLE_STRING_CONTENT_NO_INTERPOLATION = true\n");
+  }
+}
+
+static bool string_delim(TSLexer *lexer, const bool *valid_symbols) {
+  // DEBUG("entering string_delim");
+
+  if (lexer->lookahead != '"') {
+    return false;
+  }
+
+  lexer->advance(lexer, false);
+  lexer->mark_end(lexer);
+
+  // Try consuming the last 2
+  int quote_count = 1;
+  while (quote_count < 3 && lexer->lookahead == '"') {
+    lexer->advance(lexer, false);
+    quote_count++;
+  }
+
+  if (quote_count < 3) {
+    if (!valid_symbols[STRING_DELIM]) {
+      return false;
+    }
+    lexer->result_symbol = STRING_DELIM;
+    return true;
+  }
+
+  if (!valid_symbols[TRIPLE_STRING_DELIM]) return false;
+
+  lexer->mark_end(lexer);
+  lexer->result_symbol = TRIPLE_STRING_DELIM;
+  return true;
+}
+
+static bool string_content(TSLexer *lexer, const bool *valid_symbols) {
+  if (lexer->lookahead == '"' && (valid_symbols[STRING_DELIM] || valid_symbols[TRIPLE_STRING_DELIM])) {
+    return string_delim(lexer, valid_symbols);
+  }
+
+  bool triple_string = valid_symbols[TRIPLE_STRING_CONTENT] ||
+    valid_symbols[TRIPLE_STRING_CONTENT_NO_INTERPOLATION];
+
+  bool interpolate = valid_symbols[STRING_CONTENT] ||
+    valid_symbols[TRIPLE_STRING_CONTENT];
+
+  if (interpolate && lexer->lookahead == '$') {
+    return false;
+  }
+
+  while (true) {
+    // DEBUG_LOOKAHEAD(lexer->lookahead);
+    switch (lexer->lookahead) {
+      case '"':
+        if (!triple_string) {
+          lexer->result_symbol = interpolate ? STRING_CONTENT : STRING_CONTENT_NO_INTERPOLATION;
+          return true;
+        }
+        lexer->mark_end(lexer);
+
+        int quote_count = 0;
+        while (quote_count < 3 && lexer->lookahead == '"') {
+          lexer->advance(lexer, false);
+          quote_count++;
+        }
+
+        if (quote_count == 3) {
+          lexer->result_symbol = interpolate ? TRIPLE_STRING_CONTENT : TRIPLE_STRING_CONTENT_NO_INTERPOLATION;
+          return true;
+        }
+
+        continue;
+      case '$':
+        if (!interpolate) {
+          lexer->advance(lexer, false);
+          continue;
+        }
+        lexer->mark_end(lexer);
+        lexer->result_symbol = triple_string ? TRIPLE_STRING_CONTENT : STRING_CONTENT;
+        return true;
+      case '\\':
+        lexer->advance(lexer, false);
+        lexer->advance(lexer, false);
+
+        break;
+      case '\0':
+        lexer->mark_end(lexer);
+        lexer->result_symbol = triple_string ?
+            (interpolate ? TRIPLE_STRING_CONTENT : TRIPLE_STRING_CONTENT_NO_INTERPOLATION) :
+            (interpolate ? STRING_CONTENT : STRING_CONTENT_NO_INTERPOLATION);
+        return true;
+      default:
+        lexer->advance(lexer, false);
+    }
+  }
+}
 
 bool tree_sitter_julia_external_scanner_scan(
   void *payload,
   TSLexer *lexer,
   const bool *valid_symbols
 ) {
+  // debug_valid_symbol(valid_symbols);
+
   if (
     lexer->lookahead == '(' &&
     valid_symbols[IMMEDIATE_PAREN]
   ) {
     lexer->result_symbol = IMMEDIATE_PAREN;
     return true;
+  }
+
+  if (valid_symbols[STRING_CONTENT] || valid_symbols[STRING_CONTENT_NO_INTERPOLATION] ||
+      valid_symbols[TRIPLE_STRING_CONTENT] || valid_symbols[TRIPLE_STRING_CONTENT_NO_INTERPOLATION]) {
+    return string_content(lexer, valid_symbols);
   }
 
   while (iswspace(lexer->lookahead)) {
@@ -67,32 +206,7 @@ bool tree_sitter_julia_external_scanner_scan(
     }
   }
 
-  if (!valid_symbols[TRIPLE_STRING]) return false;
-
-  uint32_t quote_count = 0;
-  while (quote_count < 3) {
-    if (lexer->lookahead == '"') {
-      quote_count++;
-      lexer->advance(lexer, false);
-    } else {
-      return false;
-    }
-  }
-
-  quote_count = 0;
-  while (quote_count < 3) {
-    if (lexer->lookahead == '"') {
-      quote_count++;
-      lexer->advance(lexer, false);
-    } else {
-      quote_count = 0;
-      if (lexer->lookahead == 0) return false;
-      lexer->advance(lexer, false);
-    }
-  }
-
-  lexer->result_symbol = TRIPLE_STRING;
-  return true;
+  return string_delim(lexer, valid_symbols);
 }
 
 void *tree_sitter_julia_external_scanner_create() {

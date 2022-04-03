@@ -88,8 +88,14 @@ grammar({
 
   externals: $ => [
     $.block_comment,
-    $.triple_string,
     $._immediate_paren,
+    $.string_delim,
+    $.triple_string_delim,
+
+    $.string_content,
+    $.string_content_no_interpolation,
+    $.triple_string_content,
+    $.triple_string_content_no_interpolation,
   ],
 
   conflicts: $ => [
@@ -415,6 +421,7 @@ grammar({
       $.command_string,
       $.character,
       $.triple_string,
+      $.prefixed_string,
       $.array_expression,
       $.array_comprehension_expression,
       $.matrix_expression,
@@ -783,19 +790,55 @@ grammar({
       ))
     },
 
-    string: $ => seq(
-      choice(
-        '"',
-        seq(
-          field('prefix', $.identifier),
-          token.immediate('"')
-        )
+    prefixed_string: $ => seq(
+      seq(
+        field('prefix', $.identifier),
+        choice(
+          seq(
+            token.immediate('"'),
+            alias($.string_content_no_interpolation, ""),
+            token.immediate('"'),
+          ),
+          seq(
+            token.immediate('"""'),
+            alias($.triple_string_content_no_interpolation, ""),
+            token.immediate('"""'),
+          ),
+        ),
       ),
-      optional(token.immediate(repeat1(choice(
-        /[^"\\\n]/,
-        /\\./
-      )))),
-      token.immediate('"'),
+    ),
+
+    string: $ => seq(
+      alias($.string_delim, '"'),
+      repeat(choice(
+        alias($.string_content, ""), // What's the actual alias for a regex?
+        $.string_interpolation,
+      )),
+      alias($.string_delim, '"'),
+    ),
+
+    string_interpolation: $ => seq(
+      '$',
+      choice(
+        seq(
+          $._immediate_paren,
+          $.parenthesized_expression,
+        ),
+        $.identifier,
+      ),
+    ),
+
+    triple_string: $ => seq(
+      alias($.triple_string_delim, '"""'),
+      // $.triple_string_delim,
+      // '"""',
+      repeat(choice(
+        alias($.triple_string_content, ""),
+        // $.triple_string_content,
+        $.string_interpolation,
+      )),
+      alias($.triple_string_delim, '"""'),
+      // $.triple_string_delim,
     ),
 
     command_string: $ => token(seq(
