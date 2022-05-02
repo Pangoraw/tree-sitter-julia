@@ -470,6 +470,10 @@
                     {
                       "type": "SYMBOL",
                       "name": "typed_parameter"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "tuple_expression"
                     }
                   ]
                 },
@@ -500,6 +504,10 @@
                           {
                             "type": "SYMBOL",
                             "name": "typed_parameter"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "tuple_expression"
                           }
                         ]
                       }
@@ -1569,18 +1577,6 @@
       "content": {
         "type": "SEQ",
         "members": [
-          {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "STRING",
-                "value": "."
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          },
           {
             "type": "CHOICE",
             "members": [

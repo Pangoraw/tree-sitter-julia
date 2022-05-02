@@ -1458,6 +1458,10 @@
           "named": true
         },
         {
+          "type": "tuple_expression",
+          "named": true
+        },
+        {
           "type": "typed_parameter",
           "named": true
         }

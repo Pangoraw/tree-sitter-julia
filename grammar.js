@@ -202,7 +202,8 @@ grammar({
         $.identifier,
         $.spread_parameter,
         $.optional_parameter,
-        $.typed_parameter
+        $.typed_parameter,
+        $.tuple_expression, // its just identifiers normaly but good enough ?
       )),
       optional($.keyword_parameters),
       ')'
