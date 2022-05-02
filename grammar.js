@@ -366,9 +366,16 @@ grammar({
       sep1(',', choice(
         $.identifier,
         $.scoped_identifier,
-        $.selected_import
+        $.selected_import,
+        $.aliased_import,
       ))
     )),
+
+    aliased_import: $ => seq(
+        choice($.identifier, $.scoped_identifier),
+        'as',
+        $.identifier,
+    ),
 
     selected_import: $ => seq(
       choice($.identifier, $.scoped_identifier),
@@ -515,7 +522,18 @@ grammar({
       )),
       optional(seq(
         ';',
-        sep1(',', alias($.named_field, $.named_argument))
+        choice(
+          seq(
+            sep(',',
+              choice(
+                $.identifier,
+                alias($.named_field, $.named_argument)
+              ),
+            ),
+            optional(seq(',', $.spread_expression))
+          ),
+          $.spread_expression,
+        ),
       )),
       optional(','),
       ')'
@@ -791,30 +809,28 @@ grammar({
     },
 
     prefixed_string: $ => seq(
-      seq(
-        field('prefix', $.identifier),
-        choice(
-          seq(
-            token.immediate('"'),
-            alias($.string_content_no_interpolation, ""),
-            token.immediate('"'),
-          ),
-          seq(
-            token.immediate('"""'),
-            alias($.triple_string_content_no_interpolation, ""),
-            token.immediate('"""'),
-          ),
+      field('prefix', $.identifier),
+      choice(
+        seq(
+          token.immediate('"'),
+          alias($.string_content_no_interpolation, $.string_content),
+          token.immediate('"'),
+        ),
+        seq(
+          token.immediate('"""'),
+          alias($.triple_string_content_no_interpolation, $.string_content),
+          token.immediate('"""'),
         ),
       ),
     ),
 
     string: $ => seq(
-      alias($.string_delim, '"'),
+      '"',
       repeat(choice(
-        alias($.string_content, ""), // What's the actual alias for a regex?
+        $.string_content,
         $.string_interpolation,
       )),
-      alias($.string_delim, '"'),
+      token.immediate('"'),
     ),
 
     string_interpolation: $ => seq(
@@ -829,16 +845,12 @@ grammar({
     ),
 
     triple_string: $ => seq(
-      alias($.triple_string_delim, '"""'),
-      // $.triple_string_delim,
-      // '"""',
+      '"""',
       repeat(choice(
-        alias($.triple_string_content, ""),
-        // $.triple_string_content,
+        alias($.triple_string_content, $.string_content),
         $.string_interpolation,
       )),
-      alias($.triple_string_delim, '"""'),
-      // $.triple_string_delim,
+      token.immediate('"""'),
     ),
 
     command_string: $ => token(seq(

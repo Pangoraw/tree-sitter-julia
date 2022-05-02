@@ -85,13 +85,17 @@ Prefixed strings
 x = r"foo"
 y = v"1.0"
 z = s"# not comment"
+md"""
+
+"""
 
 ---
 
 (source_file
-  (assignment_expression (identifier) (prefixed_string (identifier)))
-  (assignment_expression (identifier) (prefixed_string (identifier)))
-  (assignment_expression (identifier) (prefixed_string (identifier))))
+  (assignment_expression (identifier) (prefixed_string (identifier) (string_content)))
+  (assignment_expression (identifier) (prefixed_string (identifier) (string_content)))
+  (assignment_expression (identifier) (prefixed_string (identifier) (string_content)))
+  (prefixed_string (identifier) (string_content)))
 
 =================
 Characters
@@ -149,6 +153,9 @@ a()
 b("hi", 2)
 c(d...)
 d(e; f = g)
+e(a...; b...)
+f(h; i)
+g(;)
 new{typeof(xs)}(xs)
 
 ---
@@ -158,6 +165,9 @@ new{typeof(xs)}(xs)
   (call_expression (identifier) (argument_list (string) (number)))
   (call_expression (identifier) (argument_list (spread_expression (identifier))))
   (call_expression (identifier) (argument_list (identifier) (named_argument (identifier) (identifier))))
+  (call_expression (identifier) (argument_list (spread_expression (identifier)) (spread_expression (identifier))))
+  (call_expression (identifier) (argument_list (identifier) (identifier)))
+  (call_expression (argument_list))
   (call_expression
     (parameterized_identifier
       (identifier)

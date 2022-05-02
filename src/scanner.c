@@ -78,12 +78,30 @@ static bool string_delim(TSLexer *lexer, const bool *valid_symbols) {
 }
 
 static bool string_content(TSLexer *lexer, const bool *valid_symbols) {
-  if (lexer->lookahead == '"' && (valid_symbols[STRING_DELIM] || valid_symbols[TRIPLE_STRING_DELIM])) {
-    return string_delim(lexer, valid_symbols);
-  }
+  // debug_valid_symbol(valid_symbols);
 
   bool triple_string = valid_symbols[TRIPLE_STRING_CONTENT] ||
     valid_symbols[TRIPLE_STRING_CONTENT_NO_INTERPOLATION];
+
+  if (lexer->lookahead == '"') {
+    if (valid_symbols[STRING_DELIM] || valid_symbols[TRIPLE_STRING_DELIM]) {
+        return string_delim(lexer, valid_symbols);
+    } else if (!triple_string) {
+        return false;
+    } else {
+        lexer->mark_end(lexer);
+
+        int quote_count = 0;
+        while (quote_count < 3 && lexer->lookahead == '"') {
+            lexer->advance(lexer, false);
+            quote_count++;
+        }
+
+        if (quote_count == 3) {
+            return false;
+        }
+    }
+  }
 
   bool interpolate = valid_symbols[STRING_CONTENT] ||
     valid_symbols[TRIPLE_STRING_CONTENT];
@@ -124,6 +142,13 @@ static bool string_content(TSLexer *lexer, const bool *valid_symbols) {
         return true;
       case '\\':
         lexer->advance(lexer, false);
+        if (lexer->lookahead == '\0') {
+            lexer->mark_end(lexer);
+            lexer->result_symbol = triple_string ?
+                (interpolate ? TRIPLE_STRING_CONTENT : TRIPLE_STRING_CONTENT_NO_INTERPOLATION) :
+                (interpolate ? STRING_CONTENT : STRING_CONTENT_NO_INTERPOLATION);
+            return true;
+        }
         lexer->advance(lexer, false);
 
         break;
@@ -137,6 +162,8 @@ static bool string_content(TSLexer *lexer, const bool *valid_symbols) {
         lexer->advance(lexer, false);
     }
   }
+
+  return false;
 }
 
 bool tree_sitter_julia_external_scanner_scan(
