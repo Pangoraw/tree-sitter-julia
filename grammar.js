@@ -208,7 +208,7 @@ grammar({
         $.identifier,
         $.spread_parameter,
         $.optional_parameter,
-        $.typed_parameter
+        $.typed_parameter,
       )),
       optional($.keyword_parameters),
       ')'
@@ -235,7 +235,7 @@ grammar({
     typed_parameter: $ => seq(
       $.identifier,
       '::',
-      choice($.identifier, $.parameterized_identifier)
+      $._primary_expression,
     ),
 
     type_parameter_list: $ => seq(
@@ -264,12 +264,14 @@ grammar({
       $.while_statement,
       $.let_statement,
       $.const_statement,
+      $.local_statement,
+      $.global_statement,
       $.quote_statement,
       $.break_statement,
       $.continue_statement,
       $.return_statement,
       $.import_statement,
-      $.export_statement
+      $.export_statement,
     ),
 
     if_statement: $ => seq(
@@ -353,6 +355,16 @@ grammar({
 
     const_statement: $ => seq(
       'const',
+      prec.right(sep1(',', $.variable_declaration))
+    ),
+
+    global_statement: $ => seq(
+      'global',
+      prec.right(sep1(',', $.variable_declaration))
+    ),
+
+    local_statement: $ => seq(
+      'local',
       prec.right(sep1(',', $.variable_declaration))
     ),
 
@@ -474,8 +486,8 @@ grammar({
 
     typed_expression: $ => prec(PREC.decl, seq(
       $._expression,
-      choice('::', '<:'),
-      choice($.identifier, $.parameterized_identifier)
+      '::',
+      $._primary_expression,
     )),
 
     parameterized_identifier: $ => seq(
@@ -485,13 +497,13 @@ grammar({
 
     type_argument_list: $ => seq(
       '{',
-      sep1(',', choice($._expression)),
+      sep1(',', choice($._expression, $.subtype_clause)),
       '}'
     ),
 
     compound_expression: $ => seq(
       'begin',
-      $._expression_list,
+      optional($._expression_list),
       'end'
     ),
 
@@ -528,7 +540,11 @@ grammar({
       )),
       optional(seq(
         ';',
-        sep1(',', alias($.named_field, $.named_argument))
+        sep(',', choice(
+            $.identifier,
+            $.spread_expression,
+            alias($.named_field, $.named_argument)),
+        ),
       )),
       optional(','),
       ')'

@@ -200,6 +200,10 @@
         "named": true
       },
       {
+        "type": "global_statement",
+        "named": true
+      },
+      {
         "type": "if_statement",
         "named": true
       },
@@ -209,6 +213,10 @@
       },
       {
         "type": "let_statement",
+        "named": true
+      },
+      {
+        "type": "local_statement",
         "named": true
       },
       {
@@ -603,7 +611,7 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
         {
           "type": "_expression",
@@ -992,6 +1000,21 @@
     }
   },
   {
+    "type": "global_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "variable_declaration",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "if_clause",
     "named": true,
     "fields": {},
@@ -1144,6 +1167,21 @@
           "type": "bare_tuple_expression",
           "named": true
         },
+        {
+          "type": "variable_declaration",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "local_statement",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
         {
           "type": "variable_declaration",
           "named": true
@@ -1913,6 +1951,10 @@
         {
           "type": "_expression",
           "named": true
+        },
+        {
+          "type": "subtype_clause",
+          "named": true
         }
       ]
     }
@@ -1960,11 +2002,47 @@
       "required": true,
       "types": [
         {
+          "type": "array_comprehension_expression",
+          "named": true
+        },
+        {
+          "type": "array_expression",
+          "named": true
+        },
+        {
+          "type": "broadcast_call_expression",
+          "named": true
+        },
+        {
+          "type": "call_expression",
+          "named": true
+        },
+        {
+          "type": "field_expression",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },
         {
+          "type": "matrix_expression",
+          "named": true
+        },
+        {
           "type": "parameterized_identifier",
+          "named": true
+        },
+        {
+          "type": "parenthesized_expression",
+          "named": true
+        },
+        {
+          "type": "subscript_expression",
+          "named": true
+        },
+        {
+          "type": "tuple_expression",
           "named": true
         }
       ]
@@ -2179,6 +2257,10 @@
     "named": false
   },
   {
+    "type": "global",
+    "named": false
+  },
+  {
     "type": "identifier",
     "named": true
   },
@@ -2201,6 +2283,10 @@
   {
     "type": "line_comment",
     "named": true
+  },
+  {
+    "type": "local",
+    "named": false
   },
   {
     "type": "macro",
