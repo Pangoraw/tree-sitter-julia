@@ -404,7 +404,7 @@ grammar({
     )),
 
     export_statement: $ => prec.right(seq(
-      'export',
+      choice('export', 'public'),
       sep1(',', $.identifier)
     )),
 

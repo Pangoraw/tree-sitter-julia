@@ -207,10 +207,13 @@ Export statements
 
 export a
 export a, b, c
+public a
+public a, b, c
 
 ---
 
 (source_file
   (export_statement (identifier))
+  (export_statement (identifier) (identifier) (identifier))
+  (export_statement (identifier))
   (export_statement (identifier) (identifier) (identifier)))
-

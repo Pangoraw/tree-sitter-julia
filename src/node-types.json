@@ -2305,6 +2305,10 @@
     "named": false
   },
   {
+    "type": "public",
+    "named": false
+  },
+  {
     "type": "quote",
     "named": false
   },
